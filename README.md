@@ -1,7 +1,3 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
-
 # JK InfoTech
 
 A document and information management system built with NestJS.
@@ -73,8 +69,6 @@ $ npm run start
 # watch mode
 $ npm run start:dev
 
-# production mode
-$ npm run start:prod
 ```
 
 ## Run tests
@@ -89,6 +83,13 @@ $ npm run test:e2e
 # test coverage
 $ npm run test:cov
 ```
+
+## Notes
+
+1 - There are currently 46 tests passings. Out of total 8 test case suits, 6 are passing.
+2 - Use docker official postgres docker container to connec to the NestJS app on default port.
+3 - Create a default Database called "postgres" before running the NestJS app.
+4 - Swagger is available at localhost:3000/api
 
 ## License
 
