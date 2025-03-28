@@ -90,6 +90,7 @@ $ npm run test:cov
 2 - Use docker official postgres docker container to connec to the NestJS app on default port.
 3 - Create a default Database called "postgres" before running the NestJS app.
 4 - Swagger is available at localhost:3000/api
+5 - Documentation for the application is placed inside the files itself like JSDoc.
 
 ## License
 
