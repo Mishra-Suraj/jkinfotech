@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { User } from './user.entity';
-import { IngestionStatus, IngestionType } from '../ingestion/dto/ingestion-request.dto';
+import { IngestionStatus, IngestionType, SourceType } from '../ingestion/dto/ingestion-request.dto';
 
 @Entity('ingestion_jobs')
 export class IngestionJob {
@@ -29,8 +29,8 @@ export class IngestionJob {
   @Column({ length: 1000 })
   message: string;
 
-  @Column({ nullable: true })
-  documentId: string;
+  @Column({ nullable: true, type: 'varchar', length: 255 })
+  documentId: string | null;
 
   @Column({ name: 'user_id' })
   userId: string;
@@ -42,20 +42,36 @@ export class IngestionJob {
   @Column({ nullable: true, type: 'text' })
   content: string;
 
+  @Column({
+    type: 'enum',
+    enum: SourceType,
+    nullable: true
+  })
+  sourceType: SourceType;
+
+  @Column({ nullable: true })
+  sourceLocation: string;
+
   @Column({ nullable: true, type: 'jsonb' })
-  metadata: Record<string, any>;
+  processingOptions: Record<string, any> | null;
+
+  @Column({ nullable: true, type: 'jsonb' })
+  targetOptions: Record<string, any> | null;
+
+  @Column({ nullable: true, type: 'jsonb' })
+  metadata: Record<string, any> | null;
 
   @Column({ default: 0 })
   retryAttempts: number;
 
-  @Column({ nullable: true })
-  lastErrorMessage: string;
+  @Column({ nullable: true, type: 'text' })
+  lastErrorMessage: string | null;
 
-  @Column({ nullable: true })
-  lastRetryTime: Date;
+  @Column({ nullable: true, type: 'timestamp' })
+  lastRetryTime: Date | null;
 
   @Column({ nullable: true, type: 'jsonb' })
-  errorDetails: Record<string, any>;
+  errorDetails: Record<string, any> | null;
 
   @CreateDateColumn()
   createdAt: Date;

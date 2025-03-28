@@ -73,8 +73,8 @@ export class DocumentsController {
   ) {
     return this.documentsService.create(
       createDocumentDto,
-      file,
       req.user.id,
+      file,
     );
   }
 

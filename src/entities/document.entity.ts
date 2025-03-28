@@ -25,6 +25,9 @@ export class Document {
   @Column({ length: 255 })
   name: string;
 
+  @Column({ length: 255 })
+  title: string;
+
   @Column({ nullable: true, length: 1000 })
   description: string;
 

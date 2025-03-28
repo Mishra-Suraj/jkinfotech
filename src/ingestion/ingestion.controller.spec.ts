@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { IngestionController } from './ingestion.controller';
 import { IngestionService } from './ingestion.service';
-import { IngestionRequestDto, IngestionStatus, IngestionType } from './dto/ingestion-request.dto';
+import { IngestionRequestDto, IngestionStatus, IngestionType, SourceType } from './dto/ingestion-request.dto';
 import { IngestionResponseDto } from './dto/ingestion-response.dto';
 import { UserRole } from '../entities/user.entity';
 
@@ -42,6 +42,10 @@ describe('IngestionController', () => {
         name: 'Test Ingestion',
         type: IngestionType.DOCUMENT,
         content: 'Sample content data',
+        sourceType: SourceType.FILE,
+        sourceLocation: '/path/to/file.pdf',
+        processingOptions: { extractText: true },
+        targetOptions: { saveToDatabase: true }
       };
 
       const mockUser = { id: 'user-id', role: UserRole.EDITOR };
@@ -53,13 +57,13 @@ describe('IngestionController', () => {
         type: IngestionType.DOCUMENT,
         status: IngestionStatus.PENDING,
         message: 'Ingestion job is pending processing',
-        createdBy: 'user-id',
+        userId: 'user-id',
         createdAt: new Date(),
         updatedAt: new Date(),
+        retryAttempts: 0
       };
 
       mockIngestionService.triggerIngestion.mockResolvedValue(expectedResponse);
-
       expect(await controller.triggerIngestion(requestDto, mockRequest)).toBe(expectedResponse);
       expect(mockIngestionService.triggerIngestion).toHaveBeenCalledWith(requestDto, mockUser.id);
     });
@@ -74,9 +78,10 @@ describe('IngestionController', () => {
         type: IngestionType.DOCUMENT,
         status: IngestionStatus.PROCESSING,
         message: 'Ingestion job is currently being processed',
-        createdBy: 'user-id',
+        userId: 'user-id',
         createdAt: new Date(),
         updatedAt: new Date(),
+        retryAttempts: 0
       };
 
       mockIngestionService.getIngestionStatus.mockResolvedValue(expectedResponse);
@@ -95,9 +100,10 @@ describe('IngestionController', () => {
         type: IngestionType.DOCUMENT,
         status: IngestionStatus.FAILED,
         message: 'Ingestion job was canceled by the user',
-        createdBy: 'user-id',
+        userId: 'user-id',
         createdAt: new Date(),
         updatedAt: new Date(),
+        retryAttempts: 0
       };
 
       mockIngestionService.cancelIngestion.mockResolvedValue(expectedResponse);
@@ -116,9 +122,10 @@ describe('IngestionController', () => {
         type: IngestionType.DOCUMENT,
         status: IngestionStatus.PENDING,
         message: 'Ingestion job is pending processing',
-        createdBy: 'user-id',
+        userId: 'user-id',
         createdAt: new Date(),
         updatedAt: new Date(),
+        retryAttempts: 0
       };
 
       mockIngestionService.retryIngestion.mockResolvedValue(expectedResponse);
@@ -135,11 +142,19 @@ describe('IngestionController', () => {
           name: 'Batch Job 1',
           type: IngestionType.DOCUMENT,
           content: 'Sample content 1',
+          sourceType: SourceType.FILE,
+          sourceLocation: '/path/to/file1.pdf',
+          processingOptions: { extractText: true },
+          targetOptions: { saveToDatabase: true }
         },
         {
           name: 'Batch Job 2',
           type: IngestionType.API,
           content: 'Sample content 2',
+          sourceType: SourceType.API,
+          sourceLocation: 'https://api.example.com/data',
+          processingOptions: { parseJson: true },
+          targetOptions: { saveToDatabase: true }
         },
       ];
 
@@ -153,9 +168,10 @@ describe('IngestionController', () => {
           type: IngestionType.DOCUMENT,
           status: IngestionStatus.PENDING,
           message: 'Ingestion job is pending processing',
-          createdBy: 'user-id',
+          userId: 'user-id',
           createdAt: new Date(),
           updatedAt: new Date(),
+          retryAttempts: 0
         },
         {
           id: 'job-id-2',
@@ -163,14 +179,14 @@ describe('IngestionController', () => {
           type: IngestionType.API,
           status: IngestionStatus.PENDING,
           message: 'Ingestion job is pending processing',
-          createdBy: 'user-id',
+          userId: 'user-id',
           createdAt: new Date(),
           updatedAt: new Date(),
+          retryAttempts: 0
         },
       ];
 
       mockIngestionService.batchIngestion.mockResolvedValue(expectedResponses);
-
       expect(await controller.batchIngestion(requestDtos, mockRequest)).toBe(expectedResponses);
       expect(mockIngestionService.batchIngestion).toHaveBeenCalledWith(requestDtos, mockUser.id);
     });

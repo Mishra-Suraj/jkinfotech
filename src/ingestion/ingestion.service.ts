@@ -1,9 +1,12 @@
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { IngestionRequestDto, IngestionStatus, IngestionType } from './dto/ingestion-request.dto';
+import { IngestionRequestDto, IngestionStatus, IngestionType, SourceType } from './dto/ingestion-request.dto';
 import { IngestionResponseDto } from './dto/ingestion-response.dto';
 import { IngestionJob } from '../entities/ingestion-job.entity';
+import axios from 'axios';
+import * as fs from 'fs';
+import * as path from 'path';
 
 // Configuration for retry mechanism
 interface RetryConfig {
@@ -38,8 +41,211 @@ export class IngestionService {
   ) {}
 
   /**
+   * Creates a new ingestion job
+   * @param requestDto The ingestion request data
+   * @param userId The user ID
+   * @returns The created ingestion job
+   */
+  async createIngestionJob(requestDto: IngestionRequestDto, userId: string): Promise<IngestionJob> {
+    this.logger.log(`Creating ingestion job for user: ${userId}`);
+    
+    // Validate request based on source type
+    if (requestDto.sourceType === SourceType.FILE && !fs.existsSync(requestDto.sourceLocation)) {
+      throw new BadRequestException(`File not found at location: ${requestDto.sourceLocation}`);
+    }
+    
+    // Create a new ingestion job in the database
+    const newJob = this.ingestionJobRepository.create({
+      name: requestDto.name,
+      description: requestDto.description,
+      type: requestDto.type,
+      status: IngestionStatus.PENDING,
+      message: 'Ingestion job created and pending processing',
+      documentId: null,
+      userId: userId,
+      content: requestDto.content,
+      metadata: requestDto.metadata,
+      sourceType: requestDto.sourceType,
+      sourceLocation: requestDto.sourceLocation,
+      processingOptions: requestDto.processingOptions,
+      targetOptions: requestDto.targetOptions,
+      retryAttempts: 0,
+    });
+    
+    // Save to database
+    const savedJob = await this.ingestionJobRepository.save(newJob);
+    
+    this.logger.log(`Ingestion job created with ID: ${savedJob.id}`);
+    
+    return savedJob;
+  }
+
+  /**
+   * Find all ingestion jobs with optional filtering
+   * @param filters Filters to apply to the query
+   * @returns Array of ingestion jobs
+   */
+  async findAllJobs(filters: { userId?: string, status?: IngestionStatus, type?: IngestionType }): Promise<IngestionJob[]> {
+    this.logger.log(`Finding ingestion jobs with filters: ${JSON.stringify(filters)}`);
+    
+    const query = this.ingestionJobRepository.createQueryBuilder('job');
+    
+    if (filters.userId) {
+      query.andWhere('job.userId = :userId', { userId: filters.userId });
+    }
+    
+    if (filters.status) {
+      query.andWhere('job.status = :status', { status: filters.status });
+    }
+    
+    if (filters.type) {
+      query.andWhere('job.type = :type', { type: filters.type });
+    }
+    
+    query.orderBy('job.createdAt', 'DESC');
+    
+    return query.getMany();
+  }
+
+  /**
+   * Find one ingestion job by ID and user ID
+   * @param jobId The job ID to find
+   * @param userId The user ID who owns the job
+   * @returns The found ingestion job
+   */
+  async findOneJob(jobId: string, userId: string): Promise<IngestionJob> {
+    this.logger.log(`Finding ingestion job: ${jobId} for user: ${userId}`);
+    
+    const job = await this.ingestionJobRepository.findOne({ 
+      where: { 
+        id: jobId,
+        userId: userId
+      }
+    });
+    
+    if (!job) {
+      throw new NotFoundException(`Ingestion job with ID "${jobId}" not found for user "${userId}"`);
+    }
+    
+    return job;
+  }
+
+  /**
+   * Cancel an ingestion job
+   * @param jobId The ID of the job to cancel
+   * @param userId The user ID who owns the job
+   * @returns The updated job
+   */
+  async cancelJob(jobId: string, userId: string): Promise<IngestionJob> {
+    this.logger.log(`Canceling ingestion job: ${jobId} for user: ${userId}`);
+    
+    const job = await this.findOneJob(jobId, userId);
+    
+    // Only allow cancellation if the job is not already completed or failed
+    if (job.status === IngestionStatus.COMPLETED || job.status === IngestionStatus.FAILED) {
+      throw new BadRequestException(`Cannot cancel ingestion job with status "${job.status}"`);
+    }
+    
+    // Update job status to failed (canceled)
+    job.status = IngestionStatus.FAILED;
+    job.message = 'Ingestion job was canceled by the user';
+    
+    // Save changes
+    return await this.ingestionJobRepository.save(job);
+  }
+
+  /**
+   * Process file-based ingestion
+   * @param job The ingestion job to process
+   * @returns The processed job
+   */
+  async processFileIngestion(job: IngestionJob): Promise<IngestionJob> {
+    this.logger.log(`Processing file ingestion for job: ${job.id}`);
+    
+    try {
+      // Update status to processing
+      job.status = IngestionStatus.PROCESSING;
+      job.message = 'Processing file ingestion';
+      await this.ingestionJobRepository.save(job);
+      
+      // Simulate file processing
+      if (!fs.existsSync(job.sourceLocation)) {
+        throw new Error(`File not found at location: ${job.sourceLocation}`);
+      }
+      
+      // Read file content (in a real implementation, you'd process the file appropriately)
+      const fileContent = fs.readFileSync(job.sourceLocation, 'utf8');
+      
+      // Simulate successful processing
+      job.status = IngestionStatus.COMPLETED;
+      job.message = 'File ingestion completed successfully';
+      job.documentId = `doc-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      
+      return await this.ingestionJobRepository.save(job);
+      
+    } catch (error) {
+      // Handle error
+      job.status = IngestionStatus.FAILED;
+      job.message = `File ingestion failed: ${error.message}`;
+      job.lastErrorMessage = error.message;
+      job.errorDetails = { 
+        timestamp: new Date().toISOString(),
+        error: error.message,
+        stack: error.stack
+      };
+      
+      return await this.ingestionJobRepository.save(job);
+    }
+  }
+
+  /**
+   * Process API-based ingestion
+   * @param job The ingestion job to process
+   * @returns The processed job
+   */
+  async processApiIngestion(job: IngestionJob): Promise<IngestionJob> {
+    this.logger.log(`Processing API ingestion for job: ${job.id}`);
+    
+    try {
+      // Update status to processing
+      job.status = IngestionStatus.PROCESSING;
+      job.message = 'Processing API ingestion';
+      await this.ingestionJobRepository.save(job);
+      
+      // Simulate API call (in a real implementation, you'd make an actual API request)
+      // For test purposes, we're not making an actual API call
+      const apiResponse = { 
+        success: true, 
+        message: 'API ingestion completed successfully',
+        documentId: `api-doc-${Date.now()}-${Math.floor(Math.random() * 1000)}`
+      };
+      
+      // Simulate successful processing
+      job.status = IngestionStatus.COMPLETED;
+      job.message = apiResponse.message;
+      job.documentId = apiResponse.documentId;
+      
+      return await this.ingestionJobRepository.save(job);
+      
+    } catch (error) {
+      // Handle error
+      job.status = IngestionStatus.FAILED;
+      job.message = `API ingestion failed: ${error.message}`;
+      job.lastErrorMessage = error.message;
+      job.errorDetails = { 
+        timestamp: new Date().toISOString(),
+        error: error.message,
+        stack: error.stack
+      };
+      
+      return await this.ingestionJobRepository.save(job);
+    }
+  }
+
+  /**
    * Triggers an ingestion process
    * @param requestDto The ingestion request data
+   * @param userId The user ID (optional)
    * @returns A response with ingestion details
    */
   async triggerIngestion(requestDto: IngestionRequestDto, userId?: string): Promise<IngestionResponseDto> {
@@ -52,10 +258,14 @@ export class IngestionService {
       type: requestDto.type,
       status: IngestionStatus.PENDING,
       message: 'Document ingestion is queued for processing',
-      documentId: requestDto.type === IngestionType.DOCUMENT ? undefined : undefined, // Will be updated when complete
+      documentId: null, // Will be updated when complete
       userId: userId || 'system', // If no user ID is provided, use 'system'
       content: requestDto.content,
       metadata: requestDto.metadata,
+      sourceType: requestDto.sourceType,
+      sourceLocation: requestDto.sourceLocation,
+      processingOptions: requestDto.processingOptions,
+      targetOptions: requestDto.targetOptions,
       retryAttempts: 0,
     });
     
@@ -185,14 +395,14 @@ export class IngestionService {
       type: job.type,
       status: job.status,
       message: job.message,
-      documentId: job.documentId,
+      documentId: job.documentId || undefined,
       createdAt: job.createdAt,
       updatedAt: job.updatedAt,
-      metadata: job.metadata,
+      metadata: job.metadata || undefined,
       retryAttempts: job.retryAttempts,
-      lastErrorMessage: job.lastErrorMessage,
-      lastRetryTime: job.lastRetryTime,
-      errorDetails: job.errorDetails,
+      lastErrorMessage: job.lastErrorMessage || undefined,
+      lastRetryTime: job.lastRetryTime || undefined,
+      errorDetails: job.errorDetails || undefined,
     };
   }
   

@@ -1,62 +1,65 @@
-import { IsNotEmpty, IsString, IsEnum, IsUUID, IsObject, IsOptional, IsDate, IsNumber } from 'class-validator';
-import { Type } from 'class-transformer';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IngestionStatus, IngestionType } from './ingestion-request.dto';
 
 export class IngestionResponseDto {
-  @IsUUID()
+  @ApiProperty({ description: 'Unique identifier for the ingestion job' })
   id: string;
 
-  @IsNotEmpty()
-  @IsString()
+  @ApiProperty({ description: 'Name of the ingestion job' })
   name: string;
 
-  @IsOptional()
-  @IsString()
+  @ApiPropertyOptional({ description: 'Description of the ingestion job' })
   description?: string;
 
-  @IsEnum(IngestionType)
+  @ApiProperty({ 
+    enum: IngestionType,
+    description: 'Type of ingestion',
+    example: IngestionType.DOCUMENT
+  })
   type: IngestionType;
 
-  @IsEnum(IngestionStatus)
+  @ApiProperty({ 
+    enum: IngestionStatus,
+    description: 'Current status of the ingestion job',
+    example: IngestionStatus.PENDING
+  })
   status: IngestionStatus;
 
-  @IsString()
+  @ApiProperty({ description: 'Status message about the ingestion job' })
   message: string;
 
-  @IsOptional()
-  @IsString()
+  @ApiPropertyOptional({ description: 'ID of the document created from this ingestion' })
   documentId?: string;
 
-  @IsOptional()
-  @IsString()
-  createdBy?: string;
+  @ApiPropertyOptional({ description: 'User ID who created this ingestion job' })
+  userId?: string;
 
-  @Type(() => Date)
-  @IsDate()
+  @ApiProperty({ description: 'When the ingestion job was created' })
   createdAt: Date;
 
-  @Type(() => Date)
-  @IsDate()
+  @ApiProperty({ description: 'When the ingestion job was last updated' })
   updatedAt: Date;
 
-  @IsOptional()
-  @IsObject()
+  @ApiPropertyOptional({ 
+    description: 'Metadata associated with the ingestion',
+    type: 'object',
+    additionalProperties: true
+  })
   metadata?: Record<string, any>;
 
-  @IsOptional()
-  @IsNumber()
-  retryAttempts?: number;
+  @ApiProperty({ description: 'Number of retry attempts made for this job' })
+  retryAttempts: number;
 
-  @IsOptional()
-  @IsString()
+  @ApiPropertyOptional({ description: 'Last error message if job failed' })
   lastErrorMessage?: string;
 
-  @IsOptional()
-  @Type(() => Date)
-  @IsDate()
+  @ApiPropertyOptional({ description: 'When the job was last retried' })
   lastRetryTime?: Date;
 
-  @IsOptional()
-  @IsObject()
+  @ApiPropertyOptional({ 
+    description: 'Detailed error information if job failed',
+    type: 'object',
+    additionalProperties: true
+  })
   errorDetails?: Record<string, any>;
 }
