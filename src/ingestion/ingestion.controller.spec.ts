@@ -67,6 +67,15 @@ describe('IngestionController', () => {
       expect(await controller.triggerIngestion(requestDto, mockRequest)).toBe(expectedResponse);
       expect(mockIngestionService.triggerIngestion).toHaveBeenCalledWith(requestDto, mockUser.id);
     });
+
+    it('should re-throw error from ingestionService.triggerIngestion', async () => {
+      const requestDto: IngestionRequestDto = { name: 'Test Ingestion', type: IngestionType.DOCUMENT, content: 'Sample content data', sourceType: SourceType.FILE, sourceLocation: '/path/to/file.pdf', processingOptions: { extractText: true }, targetOptions: { saveToDatabase: true } };
+      const mockUser = { id: 'user-id', role: UserRole.EDITOR };
+      const mockRequest = { user: mockUser };
+      const expectedError = new Error('Ingestion trigger failed');
+      mockIngestionService.triggerIngestion.mockRejectedValue(expectedError);
+      await expect(controller.triggerIngestion(requestDto, mockRequest)).rejects.toThrow(expectedError);
+    });
   });
 
   describe('getIngestionStatus', () => {
@@ -88,6 +97,13 @@ describe('IngestionController', () => {
 
       expect(await controller.getIngestionStatus(jobId)).toBe(expectedResponse);
       expect(mockIngestionService.getIngestionStatus).toHaveBeenCalledWith(jobId);
+    });
+
+    it('should re-throw error from ingestionService.getIngestionStatus', async () => {
+      const jobId = 'job-id';
+      const expectedError = new Error('Get ingestion status failed');
+      mockIngestionService.getIngestionStatus.mockRejectedValue(expectedError);
+      await expect(controller.getIngestionStatus(jobId)).rejects.toThrow(expectedError);
     });
   });
 
@@ -111,6 +127,13 @@ describe('IngestionController', () => {
       expect(await controller.cancelIngestion(jobId)).toBe(expectedResponse);
       expect(mockIngestionService.cancelIngestion).toHaveBeenCalledWith(jobId);
     });
+
+    it('should re-throw error from ingestionService.cancelIngestion', async () => {
+      const jobId = 'job-id';
+      const expectedError = new Error('Cancel ingestion failed');
+      mockIngestionService.cancelIngestion.mockRejectedValue(expectedError);
+      await expect(controller.cancelIngestion(jobId)).rejects.toThrow(expectedError);
+    });
   });
 
   describe('retryIngestion', () => {
@@ -132,6 +155,13 @@ describe('IngestionController', () => {
 
       expect(await controller.retryIngestion(jobId)).toBe(expectedResponse);
       expect(mockIngestionService.retryIngestion).toHaveBeenCalledWith(jobId);
+    });
+
+    it('should re-throw error from ingestionService.retryIngestion', async () => {
+      const jobId = 'job-id';
+      const expectedError = new Error('Retry ingestion failed');
+      mockIngestionService.retryIngestion.mockRejectedValue(expectedError);
+      await expect(controller.retryIngestion(jobId)).rejects.toThrow(expectedError);
     });
   });
 
@@ -189,6 +219,15 @@ describe('IngestionController', () => {
       mockIngestionService.batchIngestion.mockResolvedValue(expectedResponses);
       expect(await controller.batchIngestion(requestDtos, mockRequest)).toBe(expectedResponses);
       expect(mockIngestionService.batchIngestion).toHaveBeenCalledWith(requestDtos, mockUser.id);
+    });
+
+    it('should re-throw error from ingestionService.batchIngestion', async () => {
+      const requestDtos: IngestionRequestDto[] = [{ name: 'Batch Job 1', type: IngestionType.DOCUMENT, content: 'Sample content 1', sourceType: SourceType.FILE, sourceLocation: '/path/to/file1.pdf', processingOptions: { extractText: true }, targetOptions: { saveToDatabase: true } }];
+      const mockUser = { id: 'user-id', role: UserRole.EDITOR };
+      const mockRequest = { user: mockUser };
+      const expectedError = new Error('Batch ingestion failed');
+      mockIngestionService.batchIngestion.mockRejectedValue(expectedError);
+      await expect(controller.batchIngestion(requestDtos, mockRequest)).rejects.toThrow(expectedError);
     });
   });
 });

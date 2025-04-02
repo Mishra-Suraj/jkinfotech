@@ -99,6 +99,17 @@ describe('UsersController', () => {
       }));
       expect(mockUsersService.create).toHaveBeenCalledWith(userData);
     });
+
+    it('should re-throw an error from service during create', async () => {
+      const userData = { email: 'new@example.com', name: 'New User', password: 'password123', role: UserRole.VIEWER };
+      const expectedError = new Error('Failed to create user');
+
+      mockUsersService.create.mockRejectedValue(expectedError);
+
+      await expect(controller.create(userData)).rejects.toThrow(expectedError);
+      expect(mockUsersService.create).toHaveBeenCalledWith(userData);
+    });
+
   });
 
   describe('update', () => {
@@ -136,6 +147,17 @@ describe('UsersController', () => {
       expect(mockUsersService.findOne).toHaveBeenCalledWith('non-existent-id');
       expect(mockUsersService.update).not.toHaveBeenCalled();
     });
+
+    it('should re-throw an error from service during update', async () => {
+      const updateData = { name: 'Updated Name' };
+      const expectedError = new Error('Failed to update user');
+
+      mockUsersService.findOne.mockResolvedValue(mockUser);
+      mockUsersService.update.mockRejectedValue(expectedError);
+
+      await expect(controller.update('test-id', updateData)).rejects.toThrow(expectedError);
+      expect(mockUsersService.update).toHaveBeenCalledWith('test-id', updateData);
+    });
   });
 
   describe('remove', () => {
@@ -160,6 +182,16 @@ describe('UsersController', () => {
       );
       expect(mockUsersService.findOne).toHaveBeenCalledWith('non-existent-id');
       expect(mockUsersService.remove).not.toHaveBeenCalled();
+    });
+
+    it('should re-throw an error from service during remove', async () => {
+      const expectedError = new Error('Failed to remove user');
+
+      mockUsersService.findOne.mockResolvedValue(mockUser);
+      mockUsersService.remove.mockRejectedValue(expectedError);
+
+      await expect(controller.remove('test-id')).rejects.toThrow(expectedError);
+      expect(mockUsersService.remove).toHaveBeenCalledWith('test-id');
     });
   });
 });

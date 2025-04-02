@@ -153,62 +153,48 @@ describe('DocumentsController', () => {
   });
 
   describe('update', () => {
-    it('should update a document', async () => {
-      const mockFile = {
-        originalname: 'updated.pdf',
-        filename: 'updated-uuid.pdf',
-        path: '/uploads/updated-uuid.pdf',
-        mimetype: 'application/pdf',
-        size: 2048,
-      } as Express.Multer.File;
-      const updateDocumentDto: UpdateDocumentDto = {
-        name: 'Updated Document',
-        title: 'Updated Document Title',
-        description: 'Updated Description',
-      };
-      const mockUser = { id: 'user-id', role: UserRole.EDITOR };
+    it.each([
+      {
+        userRole: UserRole.EDITOR,
+        userId: 'user-id',
+        file: {
+          originalname: 'updated.pdf',
+          filename: 'updated-uuid.pdf',
+          path: '/uploads/updated-uuid.pdf',
+          mimetype: 'application/pdf',
+          size: 2048,
+        } as Express.Multer.File,
+        expectedFilePath: '/uploads/updated-uuid.pdf',
+        isAdmin: false,
+      },
+      {
+        userRole: UserRole.ADMIN,
+        userId: 'admin-id',
+        file: null,
+        expectedFilePath: '/uploads/test-uuid.pdf',
+        isAdmin: true,
+      },
+    ])('should update a document with and without file upload - user role: $userRole', async ({ userRole, userId, file, expectedFilePath, isAdmin }) => {
+      const updateDocumentDto: UpdateDocumentDto = { name: 'Updated Document', title: 'Updated Document Title', description: 'Updated Description' };
+      const mockUser = { id: userId, role: userRole };
       const mockRequest = { user: mockUser };
       const expectedResult = {
         id: 'doc-id',
         name: 'Updated Document',
         title: 'Updated Document Title',
         description: 'Updated Description',
-        filePath: '/uploads/updated-uuid.pdf',
+        filePath: expectedFilePath,
         createdBy: 'user-id',
       };
       mockDocumentsService.update.mockResolvedValue(expectedResult);
-      expect(await controller.update('doc-id', updateDocumentDto, mockFile, mockRequest)).toBe(expectedResult);
+      const result = await controller.update('doc-id', updateDocumentDto, file as unknown as Express.Multer.File, mockRequest);
+      expect(result).toBe(expectedResult);
       expect(mockDocumentsService.update).toHaveBeenCalledWith(
         'doc-id',
         updateDocumentDto,
-        mockFile,
-        mockUser.id,
-        false,
-      );
-    });
-    it('should update a document as admin user', async () => {
-      const updateDocumentDto: UpdateDocumentDto = {
-        name: 'Admin Updated',
-        title: 'Admin Updated Title',
-      };
-      const mockUser = { id: 'admin-id', role: UserRole.ADMIN };
-      const mockRequest = { user: mockUser };
-      const expectedResult = {
-        id: 'doc-id',
-        name: 'Admin Updated',
-        title: 'Admin Updated Title',
-        description: 'Test Description',
-        filePath: '/uploads/test-uuid.pdf',
-        createdBy: 'user-id',
-      };
-      mockDocumentsService.update.mockResolvedValue(expectedResult);
-      expect(await controller.update('doc-id', updateDocumentDto, null as unknown as Express.Multer.File, mockRequest)).toBe(expectedResult);
-      expect(mockDocumentsService.update).toHaveBeenCalledWith(
-        'doc-id',
-        updateDocumentDto,
-        null,
-        mockUser.id,
-        true,
+        file,
+        userId,
+        isAdmin,
       );
     });
   });

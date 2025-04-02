@@ -29,6 +29,15 @@ describe('AppController', () => {
     expect(controller).toBeDefined();
   });
 
+  describe('root', () => {
+    it('should return the greeting from the service', () => {
+      const greeting = 'Hello World!';
+      mockAppService.getHello.mockReturnValue(greeting);
+      
+      expect(controller.getHello()).toBe(greeting);
+      expect(mockAppService.getHello).toHaveBeenCalled();
+    });
+  });
   describe('getHello', () => {
     it('should return the greeting from the service', () => {
       const greeting = 'Hello World!';

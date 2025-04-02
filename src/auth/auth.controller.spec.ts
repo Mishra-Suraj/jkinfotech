@@ -45,6 +45,14 @@ describe('AuthController', () => {
       expect(await controller.login(loginDto)).toBe(expectedResult);
       expect(mockAuthService.login).toHaveBeenCalledWith(loginDto);
     });
+
+    it('should re-throw error from authService.login', async () => {
+      const loginDto: LoginDto = { email: 'test@example.com', password: 'password123' };
+      const expectedError = new Error('Login failed');
+      mockAuthService.login.mockRejectedValue(expectedError);
+
+      await expect(controller.login(loginDto)).rejects.toThrow(expectedError);
+    });
   });
 
   describe('register', () => {
@@ -61,6 +69,16 @@ describe('AuthController', () => {
       expect(await controller.register(registerDto)).toBe(expectedResult);
       expect(mockAuthService.register).toHaveBeenCalledWith(registerDto);
     });
+
+    it('should re-throw error from authService.register', async () => {
+        const registerDto: RegisterDto = { 
+          email: 'test@example.com', 
+          password: 'password123',
+          name: 'Test User' };
+        const expectedError = new Error('Registration failed');
+        mockAuthService.register.mockRejectedValue(expectedError);
+        await expect(controller.register(registerDto)).rejects.toThrow(expectedError);
+    });
   });
 
   describe('refresh', () => {
@@ -73,6 +91,13 @@ describe('AuthController', () => {
       expect(await controller.refresh(refreshTokenDto)).toBe(expectedResult);
       expect(mockAuthService.refreshToken).toHaveBeenCalledWith(refreshTokenDto);
     });
+
+    it('should re-throw error from authService.refreshToken', async () => {
+      const refreshTokenDto: RefreshTokenDto = { refreshToken: 'refresh-token' };
+      const expectedError = new Error('Refresh token failed');
+      mockAuthService.refreshToken.mockRejectedValue(expectedError);
+      await expect(controller.refresh(refreshTokenDto)).rejects.toThrow(expectedError);
+    });
   });
 
   describe('logout', () => {
@@ -84,6 +109,13 @@ describe('AuthController', () => {
       
       expect(await controller.logout(authHeader)).toBe(expectedResult);
       expect(mockAuthService.logout).toHaveBeenCalledWith('test-token');
+    });
+
+    it('should re-throw error from authService.logout', async () => {
+      const authHeader = 'Bearer test-token';
+      const expectedError = new Error('Logout failed');
+      mockAuthService.logout.mockRejectedValue(expectedError);
+      await expect(controller.logout(authHeader)).rejects.toThrow(expectedError);
     });
   });
 
