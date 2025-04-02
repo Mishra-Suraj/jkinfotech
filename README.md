@@ -54,6 +54,42 @@ src/
 - **Data Ingestion**: Support for various data sources including documents, emails, APIs, and databases
 - **User Management**: User registration, profile management, and role-based access control
 
+## Flow of the project
+
+The JK InfoTech application follows a logical flow for handling user requests, document management, and data ingestion:
+
+1. **Authentication Flow**:
+   - Users register through the auth controller
+   - Login generates JWT tokens for authentication
+   - The JWT strategy validates tokens for protected routes
+   - Refresh tokens allow for seamless re-authentication
+
+2. **Document Management Flow**:
+   - Authenticated users can create, read, update or delete documents
+   - Documents are stored in the database with metadata
+   - Role-based access controls what actions users can perform on documents
+   - The documents service handles business logic while the controller manages HTTP requests
+
+3. **Data Ingestion Flow**:
+   - The ingestion module processes incoming data from various sources
+   - Ingestion jobs are created and tracked in the database
+   - The system processes and transforms data according to configured rules
+   - Processed data is stored as documents in the system
+
+4. **User Management Flow**:
+   - Administrators can manage user accounts and permissions
+   - Users can update their profile information
+   - The users service handles user-related business logic
+
+5. **System Architecture**:
+   - NestJS modules provide clear separation of concerns
+   - Controllers handle HTTP requests and route them to appropriate services
+   - Services contain the business logic and interact with repositories
+   - Entities define the database schema
+   - DTOs ensure proper data validation and transformation
+
+This modular approach allows for maintainable, scalable code and clear separation of responsibilities throughout the application.
+
 ## Project Setup
 
 ```bash
@@ -77,20 +113,17 @@ $ npm run start:dev
 # unit tests
 $ npm run test
 
-# e2e tests
-$ npm run test:e2e
-
 # test coverage
 $ npm run test:cov
 ```
 
 ## Notes
 
-1 - There are currently 46 tests passings. Out of total 8 test case suits, 6 are passing.
-2 - Use docker official postgres docker container to connec to the NestJS app on default port.
-3 - Create a default Database called "postgres" before running the NestJS app.
-4 - Swagger is available at localhost:3000/api
-5 - Documentation for the application is placed inside the files itself like JSDoc.
+1 - Use docker official postgres docker container to connect to the NestJS app on default port.
+2 - Create a default Database called "postgres" before running the NestJS app.
+3 - Swagger is available at localhost:3000/api
+4 - Documentation for the application is placed inside the files itself like JSDoc.
+5 - Unit tests are located under their respective folders instead of a seperate folder. This ensures that the tests can be accessed easily without changing directories frequently. 
 
 ## License
 
