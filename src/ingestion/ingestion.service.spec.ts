@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { IngestionType, SourceType, IngestionStatus } from './dto/ingestion-request.dto';
+import { UserRole } from '../entities/user.entity';
 
 // Create a mock implementation of the service
 const mockIngestionService = {
@@ -85,8 +86,11 @@ describe('IngestionService', () => {
       const ingestionRequest = {
         name: 'Test Ingestion',
         type: IngestionType.DOCUMENT,
+        content: 'Sample content data',
         sourceType: SourceType.FILE,
         sourceLocation: '/path/to/nonexistent/file.pdf',
+        processingOptions: {},
+        targetOptions: {},
       };
       
       mockIngestionService.createIngestionJob.mockRejectedValue(new BadRequestException());
@@ -216,6 +220,26 @@ describe('IngestionService', () => {
         message: 'Pending processing',
         description: 'Test description',
         documentId: null,
+        content: 'File content data',
+        metadata: { source: 'test' },
+        user: { 
+          id: 'user-id', 
+          username: 'testuser', 
+          name: 'Test User',
+          email: 'test@example.com',
+          password: 'hashedpassword',
+          role: UserRole.USER,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          validatePassword: async () => true,
+          hashPassword: async () => {}
+        },
+        lastErrorMessage: null,
+        lastRetryTime: null,
+        errorDetails: null,
+        createdAt: new Date(),
+        updatedAt: new Date()
       };
       
       // Set up for job update
@@ -249,7 +273,27 @@ describe('IngestionService', () => {
         retryAttempts: 0,
         message: 'Pending processing',
         description: 'Test description',
-        documentId: null
+        documentId: null,
+        content: "content data",
+        metadata: null,
+        user: { 
+          id: 'user-id', 
+          username: 'testuser', 
+          name: 'Test User',
+          email: 'test@example.com',
+          password: 'hashedpassword',
+          role: UserRole.USER,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          validatePassword: async () => true,
+          hashPassword: async () => {}
+        },
+        lastErrorMessage: null,
+        lastRetryTime: null,
+        errorDetails: null,
+        createdAt: new Date(),
+        updatedAt: new Date()
       };
 
       const updatedJob = {
@@ -287,7 +331,27 @@ describe('IngestionService', () => {
         retryAttempts: 0,
         message: 'Pending processing',
         description: 'Test API description',
-        documentId: null
+        documentId: null,
+        content: 'API content data',
+        metadata: { source: 'api' },
+        user: { 
+          id: 'user-id', 
+          username: 'testuser',
+          name: 'Test User',
+          email: 'test@example.com',
+          password: 'hashedpassword',
+          role: UserRole.USER,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          validatePassword: async () => true,
+          hashPassword: async () => {}
+        },
+        lastErrorMessage: null,
+        lastRetryTime: null,
+        errorDetails: null,
+        createdAt: new Date(),
+        updatedAt: new Date()
       };
       
       // Set up for job update
@@ -321,7 +385,27 @@ describe('IngestionService', () => {
         retryAttempts: 0,
         message: 'Pending processing',
         description: 'Test API description',
-        documentId: null
+        documentId: null,
+        content: "API content data",
+        metadata: null,
+        user: { 
+          id: 'user-id', 
+          username: 'testuser',
+          name: 'Test User',
+          email: 'test@example.com',
+          password: 'hashedpassword',
+          role: UserRole.USER,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          validatePassword: async () => true,
+          hashPassword: async () => {}
+        },
+        lastErrorMessage: null,
+        lastRetryTime: null,
+        errorDetails: null,
+        createdAt: new Date(),
+        updatedAt: new Date()
       };
 
       const updatedJob = {

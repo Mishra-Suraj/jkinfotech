@@ -39,7 +39,7 @@ export class IngestionJob {
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  @Column({ nullable: true, type: 'text' })
+  @Column({ nullable: false, type: 'text' })
   content: string;
 
   @Column({
