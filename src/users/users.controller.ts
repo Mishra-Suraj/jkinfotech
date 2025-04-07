@@ -4,6 +4,10 @@ import { User, UserRole } from '../entities/user.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/guards/roles.decorator';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+
+@ApiTags('users')
+@ApiBearerAuth('access-token')
 
 /**
  * Controller responsible for handling user-related HTTP requests
@@ -22,7 +26,7 @@ export class UsersController {
    * @access ADMIN, EDITOR, VIEWER roles
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.EDITOR, UserRole.VIEWER)
+  @Roles(UserRole.ADMIN, UserRole.EDITOR, UserRole.VIEWER, UserRole.USER)
   @Get()
   findAll(): Promise<User[]> {
     return this.usersService.findAll();

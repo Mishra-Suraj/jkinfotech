@@ -23,11 +23,14 @@ import { UserRole } from '../entities/user.entity';
 import { IngestionService } from './ingestion.service';
 import { IngestionRequestDto } from './dto/ingestion-request.dto';
 import { IngestionResponseDto } from './dto/ingestion-response.dto';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 
 /**
  * Controller for handling document ingestion operations
  * Protected by JWT authentication and role-based authorization
  */
+@ApiTags('ingestion')
+@ApiBearerAuth('access-token')
 @Controller('ingestion')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class IngestionController {

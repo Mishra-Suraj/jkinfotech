@@ -48,7 +48,7 @@ export class AuthController {
 
   // Logout needs JWT auth to make sure only logged-in users can log out
   // Had to pull the token from the header to blacklist it
-  @ApiBearerAuth()
+  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'User logout' })
   @ApiResponse({ status: 200, description: 'Logout successful' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
@@ -62,7 +62,7 @@ export class AuthController {
 
   // Standard user profile endpoint - just returns the user data
   // Using GET since we're just fetching data, not changing anything
-  @ApiBearerAuth()
+  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Get user profile' })
   @ApiResponse({ status: 200, description: 'Returns user profile' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })

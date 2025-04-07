@@ -32,6 +32,7 @@ import { UserRole } from '../entities/user.entity';
 import { DocumentsService } from './documents.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 
 /**
  * Configure storage for uploaded files
@@ -51,6 +52,8 @@ const storage = diskStorage({
  * Documents controller handling document-related endpoints
  * Protected with JWT authentication and role-based access control
  */
+@ApiTags('documents')
+@ApiBearerAuth('access-token')
 @Controller('documents')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class DocumentsController {
