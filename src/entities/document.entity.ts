@@ -31,7 +31,7 @@ export class Document {
   @Column({ nullable: true, length: 1000 })
   description: string;
 
-  @Column()
+  @Column({ nullable: true })
   filePath: string;
 
   @Column()
@@ -39,6 +39,9 @@ export class Document {
 
   @Column()
   size: number;
+  
+  @Column({ type: 'bytea', nullable: true })
+  fileContent: Buffer;
 
   @Column({ type: 'enum', enum: DocumentStatus, default: DocumentStatus.DRAFT })
   status: DocumentStatus;

@@ -32,7 +32,7 @@ import { UserRole } from '../entities/user.entity';
 import { DocumentsService } from './documents.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
-import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiBody, ApiConsumes } from '@nestjs/swagger';
 
 /**
  * Configure storage for uploaded files
@@ -69,6 +69,36 @@ export class DocumentsController {
    */
   @Post()
   @UseInterceptors(FileInterceptor('file', { storage }))
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'The document file to upload',
+        },
+        name: { type: 'string', description: 'Document name' },
+        title: { type: 'string', description: 'Document title' },
+        description: { type: 'string', description: 'Document description' },
+        status: { 
+          type: 'string', 
+          enum: ['draft', 'published', 'archived'],
+          description: 'Document status' 
+        },
+        category: { 
+          type: 'string', 
+          enum: ['general', 'financial', 'legal', 'technical', 'marketing', 'hr', 'other'],
+          description: 'Document category'
+        },
+        author: { type: 'string', description: 'Document author' },
+        version: { type: 'string', description: 'Document version' },
+        documentDate: { type: 'string', format: 'date', description: 'Document date' },
+      },
+      required: ['file', 'name', 'title'],
+    },
+  })
   async create(
     @Body() createDocumentDto: CreateDocumentDto,
     @UploadedFile() file: Express.Multer.File,
@@ -118,6 +148,36 @@ export class DocumentsController {
    */
   @Patch(':id')
   @UseInterceptors(FileInterceptor('file', { storage }))
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'The document file to upload',
+        },
+        name: { type: 'string', description: 'Document name' },
+        title: { type: 'string', description: 'Document title' },
+        description: { type: 'string', description: 'Document description' },
+        status: { 
+          type: 'string', 
+          enum: ['draft', 'published', 'archived'],
+          description: 'Document status' 
+        },
+        category: { 
+          type: 'string', 
+          enum: ['general', 'financial', 'legal', 'technical', 'marketing', 'hr', 'other'],
+          description: 'Document category'
+        },
+        author: { type: 'string', description: 'Document author' },
+        version: { type: 'string', description: 'Document version' },
+        documentDate: { type: 'string', format: 'date', description: 'Document date' },
+      },
+      required: ['file', 'name', 'title'],
+    },
+  })
   async update(
     @Param('id') id: string,
     @Body() updateDocumentDto: UpdateDocumentDto,

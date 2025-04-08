@@ -92,17 +92,31 @@ export class DocumentsService {
       throw new BadRequestException('File is required');
     }
     
+    // Read file content
+    const fileContent = fs.readFileSync(file.path);
+    
     const document = this.documentsRepository.create({
       ...createDocumentDto,
       title: createDocumentDto.title,
-      filePath: file.path,
+      filePath: file.path, // Still keep reference to temporary file
       mimeType: file.mimetype,
       size: file.size,
+      fileContent: fileContent, // Store the file content in the database
       ownerId: userId,
       status: createDocumentDto.status || DocumentStatus.DRAFT,
     });
     
-    return this.documentsRepository.save(document);
+    // Save document with file content
+    const savedDocument = await this.documentsRepository.save(document);
+    
+    // Delete the temporary file after saving to database
+    try {
+      fs.unlinkSync(file.path);
+    } catch (error) {
+      console.error(`Error deleting temporary file: ${error.message}`);
+    }
+    
+    return savedDocument;
   }
 
   /**
@@ -132,17 +146,20 @@ export class DocumentsService {
     
     // If a new file is provided, update file-related properties
     if (file) {
-      // Delete the old file
-      try {
-        fs.unlinkSync(document.filePath);
-      } catch (error) {
-        console.error(`Error deleting old file: ${error.message}`);
-      }
+      // Read new file content
+      const fileContent = fs.readFileSync(file.path);
       
       // Update with new file information
-      document.filePath = file.path;
       document.mimeType = file.mimetype;
       document.size = file.size;
+      document.fileContent = fileContent;
+      
+      // Delete the temporary file after reading its content
+      try {
+        fs.unlinkSync(file.path);
+      } catch (error) {
+        console.error(`Error deleting temporary file: ${error.message}`);
+      }
     }
     
     // Update other properties
@@ -168,13 +185,8 @@ export class DocumentsService {
       throw new NotFoundException(`Document with ID "${id}" not found`);
     }
     
-    // Delete the file from the filesystem
-    try {
-      fs.unlinkSync(document.filePath);
-    } catch (error) {
-      console.error(`Error deleting file: ${error.message}`);
-    }
-    
+    // Delete the document from the database 
+    // (this will also delete the file content stored in the database)
     await this.documentsRepository.remove(document);
   }
 
@@ -195,12 +207,25 @@ export class DocumentsService {
       throw new NotFoundException(`Document with ID "${id}" not found`);
     }
     
-    // Check if the file exists
-    if (!fs.existsSync(document.filePath)) {
-      throw new NotFoundException('File not found on server');
+    // If no file content is stored, throw error
+    if (!document.fileContent) {
+      throw new NotFoundException('File content not found in database');
     }
     
-    return document.filePath;
+    // Create a temporary file for download
+    const tempDir = './temp';
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+    
+    // Create a unique filename for the temp file
+    const fileExt = document.mimeType.split('/').pop() || 'bin';
+    const tempFilePath = path.join(tempDir, `${document.id}.${fileExt}`);
+    
+    // Write the file content to the temp file
+    fs.writeFileSync(tempFilePath, document.fileContent);
+    
+    return tempFilePath;
   }
 
   /**
