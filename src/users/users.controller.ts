@@ -4,7 +4,8 @@ import { User, UserRole } from '../entities/user.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/guards/roles.decorator';
-import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import { CreateUserDto } from './dto/create-user.dto';
 
 @ApiTags('users')
 @ApiBearerAuth('access-token')
@@ -26,8 +27,12 @@ export class UsersController {
    * @access ADMIN, EDITOR, VIEWER roles
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.EDITOR, UserRole.VIEWER, UserRole.USER)
+  @Roles(UserRole.ADMIN, UserRole.EDITOR, UserRole.VIEWER)
   @Get()
+  @ApiOperation({ summary: 'Get all users', description: 'Retrieves all users from the system' })
+  @ApiResponse({ status: 200, description: 'Users found', type: [User] })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - requires Admin, Editor, Viewer role' })
   findAll(): Promise<User[]> {
     return this.usersService.findAll();
   }
@@ -41,8 +46,14 @@ export class UsersController {
    * @access ADMIN, EDITOR, VIEWER roles
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.EDITOR, UserRole.VIEWER)
+  @Roles(UserRole.ADMIN, UserRole.EDITOR, UserRole.VIEWER, UserRole.USER)
   @Get(':id')
+  @ApiOperation({ summary: 'Get a user by their id', description: 'Retrieves a user by their unique identifier' })
+  @ApiResponse({ status: 200, description: 'User found' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - requires Admin, Editor, Viewer or User role' })
+
   async findOne(@Param('id') id: string): Promise<User> {
     const user = await this.usersService.findOne(id);
     if (!user) {
@@ -54,15 +65,21 @@ export class UsersController {
   /**
    * Creates a new user in the system
    * 
-   * @param userData - Partial user data for creating the new user
+   * @param createUserDto - Data for creating the new user
    * @returns Promise resolving to the newly created user entity
    * @access ADMIN role only
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @Post()
-  create(@Body() userData: Partial<User>): Promise<User> {
-    return this.usersService.create(userData);
+  @ApiOperation({ summary: 'Create a new user', description: 'Creates a new user in the system (Admin only)' })
+  @ApiResponse({ status: 201, description: 'User successfully created', type: User })
+  @ApiResponse({ status: 400, description: 'Invalid input data' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - requires Admin role' })
+  @ApiBody({ type: CreateUserDto, description: 'User creation data' })
+  create(@Body() createUserDto: CreateUserDto): Promise<User> {
+    return this.usersService.create(createUserDto);
   }
   
   /**
@@ -77,6 +94,12 @@ export class UsersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.EDITOR)
   @Put(':id')
+  @ApiOperation({ summary: 'Update a user', description: 'Updates an existing user\'s information' })
+  @ApiResponse({ status: 200, description: 'User successfully updated', type: User })
+  @ApiResponse({ status: 400, description: 'Invalid input data' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - requires Admin or Editor role' })
+  @ApiBody({ type: CreateUserDto, description: 'User update data' })
   async update(@Param('id') id: string, @Body() userData: Partial<User>): Promise<User> {
     const user = await this.usersService.findOne(id);
     if (!user) {
@@ -96,6 +119,11 @@ export class UsersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @Delete(':id')
+  @ApiOperation({ summary: 'Delete a user', description: 'Removes a user from the system (Admin only)' })
+  @ApiResponse({ status: 200, description: 'User successfully deleted' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - requires Admin role' })
+  @ApiResponse({ status: 404, description: 'User not found' })
   async remove(@Param('id') id: string): Promise<void> {
     const user = await this.usersService.findOne(id);
     if (!user) {
