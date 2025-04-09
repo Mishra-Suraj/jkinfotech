@@ -34,6 +34,9 @@ export class Document {
   @Column({ nullable: true })
   filePath: string;
 
+  @Column({ nullable: true, length: 255 })
+  originalFilename: string;
+
   @Column()
   mimeType: string;
 

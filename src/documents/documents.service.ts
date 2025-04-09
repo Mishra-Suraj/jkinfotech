@@ -99,6 +99,7 @@ export class DocumentsService {
       ...createDocumentDto,
       title: createDocumentDto.title,
       filePath: file.path, // Still keep reference to temporary file
+      originalFilename: file.originalname, // Store the original filename
       mimeType: file.mimetype,
       size: file.size,
       fileContent: fileContent, // Store the file content in the database
@@ -153,6 +154,7 @@ export class DocumentsService {
       document.mimeType = file.mimetype;
       document.size = file.size;
       document.fileContent = fileContent;
+      document.originalFilename = file.originalname; // Update the original filename
       
       // Delete the temporary file after reading its content
       try {
@@ -196,10 +198,10 @@ export class DocumentsService {
    * @param id - The unique identifier of the document
    * @param userId - The ID of the user requesting the download
    * @param isAdmin - Whether the requesting user has admin privileges
-   * @returns Promise resolving to the file path
+   * @returns Promise resolving to an object containing the file path and original filename
    * @throws NotFoundException if document/file doesn't exist or user lacks permission
    */
-  async getFilePath(id: string, userId: string, isAdmin: boolean): Promise<string> {
+  async getFilePath(id: string, userId: string, isAdmin: boolean): Promise<{path: string, filename: string}> {
     const document = await this.findOne(id, userId, isAdmin);
     
     // Only owner or admin can download
@@ -219,13 +221,47 @@ export class DocumentsService {
     }
     
     // Create a unique filename for the temp file
-    const fileExt = document.mimeType.split('/').pop() || 'bin';
-    const tempFilePath = path.join(tempDir, `${document.id}.${fileExt}`);
+    const tempFilePath = path.join(tempDir, `${document.id}.plain`);
     
     // Write the file content to the temp file
     fs.writeFileSync(tempFilePath, document.fileContent);
     
-    return tempFilePath;
+    // Use original filename if available, otherwise fallback to document name with appropriate extension
+    const downloadFilename = document.originalFilename || `${document.name}${this.getExtensionFromMimeType(document.mimeType)}`;
+    
+    return {
+      path: tempFilePath,
+      filename: downloadFilename
+    };
+  }
+  
+  /**
+   * Derives a file extension from a MIME type
+   * 
+   * @param mimeType - The MIME type of the file
+   * @returns A file extension including the dot prefix
+   */
+  private getExtensionFromMimeType(mimeType: string): string {
+    const mimeToExt = {
+      'application/pdf': '.pdf',
+      'application/msword': '.doc',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
+      'application/vnd.ms-excel': '.xls',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '.xlsx',
+      'application/vnd.ms-powerpoint': '.ppt',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation': '.pptx',
+      'text/plain': '.txt',
+      'text/html': '.html',
+      'text/css': '.css',
+      'text/javascript': '.js',
+      'application/json': '.json',
+      'image/jpeg': '.jpg',
+      'image/png': '.png',
+      'image/gif': '.gif',
+      'image/svg+xml': '.svg',
+    };
+    
+    return mimeToExt[mimeType] || `.${mimeType.split('/').pop() || 'bin'}`;
   }
 
   /**

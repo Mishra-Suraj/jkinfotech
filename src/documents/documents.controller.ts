@@ -36,14 +36,17 @@ import { ApiTags, ApiBearerAuth, ApiBody, ApiConsumes } from '@nestjs/swagger';
 
 /**
  * Configure storage for uploaded files
- * Sets destination folder and generates unique filenames using UUID
- * to prevent filename conflicts
+ * Sets destination folder and generates unique filenames while preserving original names
+ * to prevent filename conflicts but maintain file identification
  */
 const storage = diskStorage({
   destination: './uploads',
   filename: (req, file, cb) => {
-    // Generate unique filename
-    const uniqueFilename = `${uuidv4()}${extname(file.originalname)}`;
+    // Generate unique filename with original name included
+    const fileNameWithoutExt = file.originalname.replace(/\.[^/.]+$/, "");
+    // Sanitize filename to avoid path issues
+    const sanitizedName = fileNameWithoutExt.replace(/[^a-zA-Z0-9-_]/g, "_");
+    const uniqueFilename = `${sanitizedName}-${uuidv4()}${extname(file.originalname)}`;
     cb(null, uniqueFilename);
   },
 });
@@ -214,14 +217,30 @@ export class DocumentsController {
    * @param id - Document unique identifier
    * @param req - Request object containing authenticated user information
    * @param res - Response object used to send the file
-   * @returns File download response
+   * @returns File download response with original filename
    */
   @Get(':id/download')
   async download(@Param('id') id: string, @Request() req, @Res() res: Response) {
     const isAdmin = req.user.role === UserRole.ADMIN;
-    const filePath = await this.documentsService.getFilePath(id, req.user.id, isAdmin);
+    const fileInfo = await this.documentsService.getFilePath(id, req.user.id, isAdmin);
     
-    // Return the file as download
-    return res.download(filePath);
+    // Return the file as download with the original filename
+    return res.download(fileInfo.path, fileInfo.filename, (err) => {
+      if (err) {
+        console.error(`Error downloading file: ${err.message}`);
+      } else {
+        // Clean up the temporary file after download
+        try {
+          // Give a small delay to ensure download has completed
+          setTimeout(() => {
+            if (require('fs').existsSync(fileInfo.path)) {
+              require('fs').unlinkSync(fileInfo.path);
+            }
+          }, 1000);
+        } catch (error) {
+          console.error(`Error deleting temporary file: ${error.message}`);
+        }
+      }
+    });
   }
 }
